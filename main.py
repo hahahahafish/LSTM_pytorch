@@ -136,30 +136,49 @@ class LSTM(nn.Module):
 # LSTM維度:input=1，hidden=4，stacked=1
 model = LSTM(1, 4, 1)
 model.to(device)
-print(model)
+#print(model)
 
+# 評估訓練集上的性能(loss)
 def train_one_epoch():
     model.train(True)
     print(f'Epoch: {epoch + 1}')
-    rinning_loss = 0.0
+    running_loss = 0.0
 
     for batch_index, batch in enumerate(train_loader):
         x_batch, y_batch = batch[0].to(device), batch[1].to(device)
 
         output = model(x_batch)
-        loss = loss_function(output, y_batch)
-        running_loss += loss
+        loss = loss_function(output, y_batch)   # 計算預測輸出跟真實標籤之間的損失
+        running_loss += loss.item()
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        loss.backward()     # 根據損失值反向運算，計算梯度
+        optimizer.step()    # 使用優化器更新參數，最小化loss
 
+        # 每隔100批次打印平均loss值
         if batch_index % 100 == 99:
             avg_loss_across_batches = running_loss / 100
             print('Batch {0}, Loss: {1:.3f}'.format(batch_index+1,
                                                     avg_loss_across_batches))
-            running_loss = 0.0
+            running_loss = 0.0     # reset loss
     print()
 
+# 評估驗證集上的性能(loss)
+def validate_one_epoch():
+    model.train(False)
+    running_loss = 0.0
+
+    for batch_index, batch in enumerate(test_loader):
+        x_batch, y_batch = batch[0].to(device), batch[1].to(device)
+
+        with torch.no_grad():
+            output = model(x_batch)
+            loss = loss_function(output, y_batch)
+            running_loss += loss.item()
+        
+    avg_loss_across_batches = running_loss / len(test_loader)
+    print('Val Loss: {0:.3f}'.format(avg_loss_across_batches))
+    print('****************************************************')
+    print()
 
 learning_rate = 0.001
 num_epoch = 10
@@ -169,3 +188,66 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 for epoch in range(num_epoch):
     train_one_epoch()
     validate_one_epoch()
+
+# 用訓練好的模型對"訓練集"上的數據進行預測(為了檢測擬合狀態)
+with torch.no_grad():   # 告訴pytorch在接下來的運算中不需要計算梯度
+    predicted = model(x_train.to(device)).to('cpu').numpy()    # numpy只能使用cpu不會使用gpu
+
+'''
+plt.plot(y_train, label='Actual Close')
+plt.plot(predicted, label='Predicted Close')
+plt.xlabel('Day')
+plt.ylabel('Close')
+plt.legend()
+plt.show()
+'''
+
+# 訓練集
+# 將-1,1的值轉換為實際美元
+train_predictions = predicted.flatten()    # 二維變一維(使用模型的預測值)
+
+dummies = np.zeros((x_train.shape[0], lookback+1))     # 整個陣列的長度(x+y)
+dummies[:, 0] = train_predictions   # 第一行為預測值
+dummies = scaler.inverse_transform(dummies)    #反轉化(將標準化的數值還原到原始)
+
+train_predictions = dc(dummies[:, 0])
+#print(train_predictions)
+
+dummies = np.zeros((x_train.shape[0], lookback+1))     # 整個陣列的長度(x+y)
+dummies[:, 0] = y_train.flatten()   # 第一行為預測值，二維變一維(使用實際值)
+dummies = scaler.inverse_transform(dummies)    #反轉化(將標準化的數值還原到原始)
+
+new_y_train = dc(dummies[:, 0])
+#print(new_y_train)
+'''
+'''
+plt.plot(new_y_train, label='Actual Close')
+plt.plot(train_predictions, label='Predicted Close')
+plt.xlabel('Day')
+plt.ylabel('Close')
+plt.legend()
+plt.show()
+
+# 測試集
+test_predictions = model(x_test.to(device)).detach().cpu().numpy().flatten()
+
+dummies = np.zeros((x_test.shape[0], lookback+1))
+dummies[:, 0] = test_predictions
+dummies = scaler.inverse_transform(dummies)
+
+test_predictions = dc(dummies[:, 0])
+print(test_predictions)
+
+dummies = np.zeros((x_test.shape[0], lookback+1))     # 整個陣列的長度(x+y)
+dummies[:, 0] = y_test.flatten()   # 第一行為預測值，二維變一維(使用實際值)
+dummies = scaler.inverse_transform(dummies)    #反轉化(將標準化的數值還原到原始)
+
+new_y_test = dc(dummies[:, 0])
+print(new_y_test)
+
+plt.plot(new_y_test, label='Actual Close')
+plt.plot(test_predictions, label='Predicted Close')
+plt.xlabel('Day')
+plt.ylabel('Close')
+plt.legend()
+plt.show()
