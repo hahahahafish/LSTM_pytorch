@@ -1,5 +1,4 @@
 # LSTM_pytorch
-https://www.notion.so/LSTM-4a992c1f15d04f018a177bc09a298ecd
 # 目標
 
 針對Amazon股票，用過去七天的收盤價(x, 第二行到最後一行) 預測今天的收盤價(y, 第一行)
