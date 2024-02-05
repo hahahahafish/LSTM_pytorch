@@ -4,7 +4,8 @@ https://www.notion.so/LSTM-4a992c1f15d04f018a177bc09a298ecd
 
 針對Amazon股票，用過去七天的收盤價(x, 第二行到最後一行) 預測今天的收盤價(y, 第一行)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/e127742d-72b6-414d-93a4-1c69d86e2b69/263f4878-5032-45ea-90b9-cf4a331e5526/Untitled.png)
+![image](https://github.com/hahahahafish/LSTM_pytorch/assets/151550763/07b3c40c-cae4-4e35-aca4-f480808c2faa)
+
 
 # 步驟
 
